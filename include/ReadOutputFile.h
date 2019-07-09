@@ -1,3 +1,7 @@
+#ifndef READOUTPUTFILE_H
+#define READOUTPUTFILE_H 1
+
+#include <fstream>
 #include "ParseConfigFile.h"
 #include "TFile.h"
 #include "TTree.h"
@@ -37,12 +41,25 @@ class ReadEvent_t
 class OutputFileManager
 {
 public:
+    OutputFileManager(string sfile);
     void ConvertFileFlag(OUTFILE_FLAGS);
+    bool OpenFile(string s);
+    int ReadOneEvent();
 private:
     string fFileName;
+    ifstream fStream;
+
     int fGroup;
     int fChannel;
     bool fTRFlag;
     bool fBinaryFlag;   // 0: ASCII, 1: Binary
     bool fHeaderFlag;   // 0: No header, 1: Header
+
+    bool fFileNameParsed = 0;
+    bool fFileHeaderParsed = 0;
+    bool ParseDataFileName(string sfile);
+    bool ParseDataFileHeader(string sfile);
 };
+
+
+#endif

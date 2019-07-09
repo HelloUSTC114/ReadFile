@@ -1,3 +1,6 @@
+#ifndef PARSECONFIGFILE_H
+#define PARSECONFIGFILE_H 1
+
 #include <iostream>
 #include <cstdio>
 #include <cstdlib>
@@ -84,3 +87,5 @@ public:
 
 int ParseConfigFile(FILE *f_ini, WaveDumpConfig_t *WDcfg);
 // int ParseConfigFile(string fFileName, WaveDumpConfig_t * WDcfg);
+
+#endif
