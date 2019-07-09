@@ -33,9 +33,9 @@ OutputFileManager::OutputFileManager(string sfile)
     ParseDataFileHeader(sfile);
 }
 
-int OutputFileManager::ReadOneEvent()
+int OutputFileManager::ReadOneEvent(EventInfo_t & info, SingleEvent_t &event)
 {
-
+    
 }
 
 bool OutputFileManager::ParseDataFileName(string sfile)
@@ -136,6 +136,23 @@ bool OutputFileManager::ParseDataFileHeader(string sfile)
         }
 
         tStream.close();
+    }
+    return true;
+}
+
+bool OutputFileManager::OpenFile()
+{
+    if(fStream.good() == false)
+    {
+        fStream . close();
+    }
+    if(fStream.is_open() == false)
+    {
+        fStream.open(fFileName);
+        if(fStream.is_open() == false)
+        {
+            return false;
+        }
     }
     return true;
 }

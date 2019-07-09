@@ -32,19 +32,35 @@ struct Event_t
     GroupEvent_t DataGroup[MAX_X740_GROUP_SIZE];    //[4] array of chSize samples
 };
 
-class ReadEvent_t
+struct ReadEvent_t
 {
     EventInfo_t fEventInfo;
     float fData[1024];  //[1024] only one event in one channel;
+};
+
+struct Header_t
+{
+    uint32_t fLength;
+    uint32_t fBoardID;
+    uint32_t fPattern;
+    uint32_t fChannel;
+    uint32_t fEventCounter;
+    uint32_t fTriggerTimeTag;
+};
+
+struct SingleEvent_t
+{
+    float Data[1024];
 };
 
 class OutputFileManager
 {
 public:
     OutputFileManager(string sfile);
+    OutputFileManager(string sfile, int gr, int ch);
     void ConvertFileFlag(OUTFILE_FLAGS);
     bool OpenFile(string s);
-    int ReadOneEvent();
+    int ReadOneEvent(EventInfo_t &, SingleEvent_t &);
 private:
     string fFileName;
     ifstream fStream;
@@ -59,7 +75,11 @@ private:
     bool fFileHeaderParsed = 0;
     bool ParseDataFileName(string sfile);
     bool ParseDataFileHeader(string sfile);
+
+    bool OpenFile();
 };
+
+
 
 
 #endif
