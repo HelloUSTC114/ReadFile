@@ -33,8 +33,150 @@ OutputFileManager::OutputFileManager(string sfile)
     ParseDataFileHeader(sfile);
 }
 
-int OutputFileManager::ReadOneEvent(EventInfo_t & info, SingleEvent_t &event)
+void OutputFileManager::FillHeaderManually(Header_t& header)
 {
+    header.fLength = 1024;
+    header.fBoardID = 0000;
+    header.fPattern = 0;
+    if (fTRFlag)
+    {
+        fChannel = 8;
+    }
+    else
+    {
+        header.fChannel = fChannel % 4;
+    }
+
+    header.fEventCounter = fEventCounter;
+    header.fTriggerTimeTag = 0;
+}
+
+int OutputFileManager::ReadOneEvent(Header_t & header, SingleEvent_t &event)
+{
+    if (!fStream.good() || !fStream.is_open())
+    {
+        FillZeroHeader(header);
+        FillZeroEvent(event);
+        return -1;
+    }
+
+    fEventCounter ++;
+    if(fBinaryFlag) // binary file
+    {
+        if(fHeaderFlag) // Has header, read header from file
+        {
+            fStream.read((char *)&header.fLength, sizeof(uint32_t));  // Read fLength
+            fStream.read((char *)&header.fBoardID, sizeof(uint32_t)); // Read fBoardID
+            fStream.read((char *)&header.fPattern, sizeof(uint32_t)); // Read fPattern
+            fStream.read((char *)&header.fChannel, sizeof(uint32_t)); // Read fChannel
+            fStream.read((char *)&header.fEventCounter, sizeof(uint32_t)); // Read fEventCounter
+            fStream.read((char *)&header.fTriggerTimeTag, sizeof(uint32_t)); // Read fTriggerTimeTag
+        }
+        else    // No header, fill header manually
+        {
+            FillHeaderManually(header);
+        }
+        // Fill event into event array;
+        fStream.read((char*) event.Data, 1024 * 4);
+        
+    }
+    else    // ASCII file
+    {
+        if(fHeaderFlag) // Has header
+        {
+            string sLine;
+            for (int i = 0; i < 7; i++)
+            {
+                getline(fStream, sLine);
+                stringstream ss(sLine);
+                string sWord;
+                ss >> sWord;
+                if (sWord == "Record")
+                {
+                    header.fLength = 1024;
+                }
+                else if (sWord == "BoardID:")
+                {
+                    ss >> sWord;
+                    try
+                    {
+                        int temp = stoi(sWord);
+                        header.fBoardID = temp;
+                    }
+                    catch (invalid_argument)
+                    {
+                        header.fBoardID = 0;
+                    }
+                }
+                else if (sWord == "Channel:")
+                {
+                    ss >> sWord;
+                    try
+                    {
+                        int ch = stoi(sWord);
+                        header.fChannel = ch;
+                    }
+                    catch (invalid_argument)
+                    {
+                        header.fChannel = 8;
+                    }
+                }
+                else if (sWord == "Event")
+                {
+                    ss >> sWord;
+                    ss >> sWord;
+                    try
+                    {
+                        int counter = stoi(sWord);
+                        header.fEventCounter = counter;
+                    }
+                    catch (invalid_argument)
+                    {
+                        header.fEventCounter = 0;
+                    }
+                }
+                else if (sWord == "Pattern:")
+                {
+                    ss >> sWord;
+                    try
+                    {
+                        int pattern = stoi(sWord);
+                        header.fPattern = pattern;
+                    }
+                    catch (invalid_argument)
+                    {
+                        header.fPattern = 8;
+                    }
+                }
+                else if (sWord == "Trigger")
+                {
+                    ss >> sWord >> sWord;
+                    ss >> sWord;
+                    try
+                    {
+                        int time = stoi(sWord);
+                        header.fTriggerTimeTag = time;
+                    }
+                    catch (invalid_argument)
+                    {
+                        header.fTriggerTimeTag = 0;
+                    }
+                }
+            }
+        }
+        else
+        {
+            FillHeaderManually(header);
+        }
+        
+        for(int i = 0; i < 1024; i++)
+        {
+            float temp;
+            fStream >> temp;
+            event.Data[i] = temp;
+        }
+    }
+    return 1;
     
 }
 
@@ -145,6 +287,7 @@ bool OutputFileManager::OpenFile()
     if(fStream.good() == false)
     {
         fStream . close();
+        fEventCounter = 0;
     }
     if(fStream.is_open() == false)
     {
@@ -155,4 +298,22 @@ bool OutputFileManager::OpenFile()
         }
     }
     return true;
+}
+
+void FillZeroHeader(Header_t &header)
+{
+    header.fLength = 0;
+    header.fBoardID = 0;
+    header.fPattern = 0;
+    header.fChannel = 0;
+    header.fEventCounter = 0;
+    header.fTriggerTimeTag = 0;
+}
+
+void FillZeroEvent(SingleEvent_t &event)
+{
+    for (int i = 0; i < 1024; i++)
+    {
+        event.Data[i] = 0;
+    }
 }

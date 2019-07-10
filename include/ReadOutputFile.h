@@ -53,6 +53,10 @@ struct SingleEvent_t
     float Data[1024];
 };
 
+void FillZeroHeader(Header_t &header);
+
+void FillZeroEvent(SingleEvent_t &event);
+
 class OutputFileManager
 {
 public:
@@ -60,7 +64,7 @@ public:
     OutputFileManager(string sfile, int gr, int ch);
     void ConvertFileFlag(OUTFILE_FLAGS);
     bool OpenFile(string s);
-    int ReadOneEvent(EventInfo_t &, SingleEvent_t &);
+    int ReadOneEvent(Header_t &, SingleEvent_t &);
 private:
     string fFileName;
     ifstream fStream;
@@ -71,10 +75,14 @@ private:
     bool fBinaryFlag;   // 0: ASCII, 1: Binary
     bool fHeaderFlag;   // 0: No header, 1: Header
 
+    int fEventCounter = 0;  // Eventcounter
+
     bool fFileNameParsed = 0;
     bool fFileHeaderParsed = 0;
     bool ParseDataFileName(string sfile);
     bool ParseDataFileHeader(string sfile);
+
+    void FillHeaderManually(Header_t &header);
 
     bool OpenFile();
 };
