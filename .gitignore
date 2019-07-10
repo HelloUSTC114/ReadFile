@@ -2,3 +2,4 @@ obj
 lkdef/*.pcm
 lkdef/*.cxx
 lib
+.vscode

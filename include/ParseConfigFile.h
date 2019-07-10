@@ -6,8 +6,10 @@
 #include <cstdlib>
 #include <math.h>
 #include <cstring>
-#include <CAENDigitizer.h>
-#include <CAENDigitizerType.h>
+// #include <CAENDigitizer.h>
+// #include <CAENDigitizerType.h>
+#include "CAENType.h"
+
 // #include <unistd.h>
 // #include <ctype.h>
 // #include <sys/time.h>
