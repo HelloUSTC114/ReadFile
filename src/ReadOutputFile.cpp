@@ -1,6 +1,6 @@
 #include "ReadOutputFile.h"
 
-void OutputFileManager::ConvertFileFlag(OUTFILE_FLAGS fileflag)
+void OutputFileManager::ConvertFileFlag(const OUTFILE_FLAGS &fileflag)
 {
     // Check the file format type
     if(fileflag & OFF_BINARY)
@@ -24,6 +24,8 @@ void OutputFileManager::ConvertFileFlag(OUTFILE_FLAGS fileflag)
         // No header
         fHeaderFlag = 0;
     }
+
+    fFileAttributes = 1;
     
 }
 
@@ -31,6 +33,18 @@ OutputFileManager::OutputFileManager(string sfile)
 {
     ParseDataFileName(sfile);
     ParseDataFileHeader(sfile);
+
+    OpenFile();
+}
+
+OutputFileManager::OutputFileManager(string sfile, int gr, int ch)
+{
+    auto pFile = fopen(sfile.c_str(), "read");
+    WaveDumpConfig_t config;
+    ParseConfigFile(pFile,&config);
+    ConvertFileFlag(config.OutFileFlags);
+    GenerateFileNameFromGroup(gr, ch);
+    OpenFile();
 }
 
 void OutputFileManager::FillHeaderManually(Header_t& header)
@@ -186,13 +200,11 @@ bool OutputFileManager::ParseDataFileName(string sfile)
     {
         fFileName = sfile;
         fBinaryFlag = 0;
-        fStream.open(fFileName);
     }
     else if (sfile.find(".dat") != string::npos)
     {
         fFileName = sfile;
         fBinaryFlag = 1;
-        fStream.open(fFileName, ifstream::binary);
     }
     else
     {
@@ -291,11 +303,56 @@ bool OutputFileManager::OpenFile()
     }
     if(fStream.is_open() == false)
     {
-        fStream.open(fFileName);
+        if(fBinaryFlag)
+        {
+            fStream.open(fFileName, ifstream::binary);
+        }
+        else
+        {
+            fStream.open(fFileName);
+        }
+        
         if(fStream.is_open() == false)
         {
             return false;
         }
+    }
+    return true;
+}
+
+bool OutputFileManager::GenerateFileNameFromGroup(int gr, int ch)
+{
+    if(!fFileAttributes)
+    {
+        cerr << "File attributions have not been decided yet!" << endl;
+        return false;
+    }
+    if(ch == 8) // For TR
+    {
+        fFileName = "TR_";
+        if(gr == 0 || gr == 1 || gr == 2)
+        {
+            fFileName += "_0_";
+            fFileName += to_string(gr);
+        }
+        else
+        {
+            fFileName += "_1_3";
+        }
+    }
+    else
+    {
+        fFileName = "wave_";
+        fFileName += to_string(8 * gr + ch);
+    }
+
+    if(fBinaryFlag)
+    {
+        fFileName += ".dat";
+    }
+    else
+    {
+        fFileName += ".txt";
     }
     return true;
 }

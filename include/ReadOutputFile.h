@@ -60,9 +60,9 @@ void FillZeroEvent(SingleEvent_t &event);
 class OutputFileManager
 {
 public:
-    OutputFileManager(string sfile);
-    OutputFileManager(string sfile, int gr, int ch);
-    void ConvertFileFlag(OUTFILE_FLAGS);
+    OutputFileManager(string sfile);    // sfile is name of data file, group, channel information can be inferred from sfile, header information can be inferred from contents of file
+    OutputFileManager(string sfile, int gr, int ch);    // sfile is name of configuration file, group and channel information must be provided, header and format information can be inferred from the information
+    void ConvertFileFlag(const OUTFILE_FLAGS&);
     bool OpenFile(string s);
     int ReadOneEvent(Header_t &, SingleEvent_t &);
 private:
@@ -79,12 +79,15 @@ private:
 
     bool fFileNameParsed = 0;
     bool fFileHeaderParsed = 0;
-    bool ParseDataFileName(string sfile);
-    bool ParseDataFileHeader(string sfile);
+    bool ParseDataFileName(string sfile);   // Only in charge of parse file name
+    bool ParseDataFileHeader(string sfile); // Only in charge of parse header, open file and then close file, using another stream
 
     void FillHeaderManually(Header_t &header);
 
-    bool OpenFile();
+    bool OpenFile();    // In charge of openfile
+    
+    bool fFileAttributes = 0;
+    bool GenerateFileNameFromGroup(int gr, int ch);
 };
 
 
