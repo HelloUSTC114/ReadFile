@@ -1,5 +1,6 @@
 obj
-lkdef/*.pcm
-lkdef/*.cxx
+lkdef
 lib
 .vscode
+*.root
+test

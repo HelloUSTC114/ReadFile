@@ -45,7 +45,7 @@ static void SetDefaultConfiguration(WaveDumpConfig_t *WDcfg)
 }
 
 // int ParseConfig(string fFileName, WaveDumpConfig_t *WDcfg) 
-int ParseConfig(FILE* f_ini, WaveDumpConfig_t *WDcfg)
+int ParseConfigFile(FILE* f_ini, WaveDumpConfig_t *WDcfg)
 {
     char str[1000], str1[1000], *pread;
     int i, ch = -1, val, Off = 0, tr = -1;
