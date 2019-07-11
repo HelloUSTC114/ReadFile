@@ -2,35 +2,30 @@
 #include "TFile.h"
 int main()
 {
-    RootEvent_t test(10);
-    auto file = new TFile("test.root", "recreate");
-    test.Write();
-    file ->Close();
-    cout << "Before Writing: " << endl;
-    for (int i = 0; i < test.fChannelNumber; i++)
+    RootEvent_t tEvent;
+    RootSingle_t tSingle;
+
+    tSingle.fData[0]=20;
+
+    for(int i = 0; i < 32; i++)
     {
-        cout << "channel: " << i << endl;
-        for (int j = 0; j < 500; j++)
-        {
-            cout << test.fData[i].Data[j] << '\t';
-        }
-        cout << endl;
+        cout << i << endl;
+        tEvent.AddEvent(tSingle, i/8, i%8);
     }
+
+    auto file = new TFile("tEvent.root", "recreate");
+    tEvent.Write("Event");
+    cout << "Before Writing: " << endl;
+    tEvent.PrintEvent(cout);
+    file ->Close();
+
     delete file;
 
-    auto file2 = new TFile("test.root");
-    auto b = (RootEvent_t*)file2 -> Get("RootEvent_t;1");
+    auto file2 = new TFile("tEvent.root");
+    auto b = (RootEvent_t*)file2 -> Get("Event");
 
     cout << "Reading: " << endl;
     
-    for(int i = 0; i < b->fChannelNumber; i++)
-    {
-        cout << "channel: " << i << endl;
-        for (int j = 0; j < 500; j++)
-        {
-            cout << b->fData[i].Data[j] << '\t';
-        }
-        cout << endl;
-    }
+    tEvent.PrintEvent(cout);
     file2 -> Close();
 }
