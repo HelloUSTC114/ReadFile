@@ -50,18 +50,28 @@ public:
     
     int GetTotalChannelNum(){return fChannelNum;}
     
-private:
-    bool fHeaderFlag;
+    RootSingle_t * GetChannel(int gr, int ch);
 
-    bool fGroupFlag[4];
-    bool fTR0Flag;
-    bool fTR1Flag;
+    bool SetGroupFlag(int gr, bool flag);
+    bool SetTRFlag(int tr, bool flag);
+    void Clear();
+
+    bool ReadyToSave();
+    
+private:
+    bool fHeaderFlag = 1;
+
+    bool fGroupFlag[4]{0};
+    bool fTR0Flag = 0;
+    bool fTR1Flag = 0;
 
     int fChannelNum = 0;
     int CalTotalChannelNum();
 
     int fChannelFillingCounter = 0; //!
-    bool fChanFilledFlag[32]{0}; 
+    int fChFilledPosition[32];  // record channel related event array position
+    int fPositionRelatedChan[32];   // record event array position related channel
+
     bool fTR0FilledFlag = 0;    
     bool fTR1FilledFlag = 0;    
 
@@ -85,5 +95,8 @@ private:
     TTree *fTree;
     
 };
+
+int ConvertGrToCh(int gr, int ch);
+bool ConvertChToGr(int Channel, int &gr, int &ch);
 
 #endif

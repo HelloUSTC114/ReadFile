@@ -49,7 +49,6 @@ distclean:
 
 test:  test.cpp $(LIBFULL)
 	`root-config --cxx `	-o	$@	$<	-Llib	-l$(LIB)	`root-config --libs` $(CXXFLAGS)
-	echo $(LIBFULL)
 
 
 
