@@ -388,7 +388,11 @@ bool OutputFileManager::ParseDataFileHeader(string sfile)
         tStream.open(fFileName, fstream::binary);
         uint32_t BinHeader[6];
         tStream.read((char*)BinHeader, sizeof(*BinHeader) * 6);
-        if(BinHeader[0] == 1024)
+        for(int i = 0; i < 6; i++)
+        {
+            cout << BinHeader[i] << endl;
+        }
+        if(BinHeader[3] == fChannel)
         {
             fHeaderFlag = 1;
         }
@@ -422,8 +426,8 @@ bool OutputFileManager::ParseDataFileHeader(string sfile)
         }
 
         tStream.close();
-        fFileHeaderParsed = 1;
     }
+    fFileHeaderParsed = 1;
     return true;
 }
 
