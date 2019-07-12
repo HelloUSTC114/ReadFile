@@ -3,12 +3,17 @@
 
 ClassImp(RootHeader_t);
 ClassImp(RootSingle_t);
-
+ClassImp(RootGroup_t);
 ClassImp(RootEvent_t);
 
 // TClonesArray *RootEvent_t::fgSingles = new TClonesArray("RootSingle_t", 40);
 
 RootHeader_t::RootHeader_t(const Header_t &header)
+{
+    SetHeader(header);
+}
+
+void RootHeader_t::SetHeader(const Header_t& header)
 {
     fEventCounter = header.fEventCounter;
     fTTStamp = header.fTriggerTimeTag;
@@ -16,10 +21,23 @@ RootHeader_t::RootHeader_t(const Header_t &header)
 
 RootSingle_t::RootSingle_t(const SingleEvent_t &event)
 {
+    SetData(event);
+}
+
+void RootSingle_t::SetData(const SingleEvent_t &event)
+{
     memcpy(fData, event.Data, 1024 * sizeof(float));
 }
 
-ostream & RootSingle_t::Show(ostream &os)
+void RootSingle_t::ClearData()
+{
+    for(int i = 0; i < 1024; i++)
+    {
+        fData[i] = 0;
+    }
+}
+
+ostream & RootSingle_t::Show(ostream &os) const
 {
     os << "-------Channel details: ------" << endl;
     for (int i = 0 ; i < 1024; i++)
@@ -29,166 +47,250 @@ ostream & RootSingle_t::Show(ostream &os)
     os << endl << "-----------The End----------" << endl;
 }
 
-int RootEvent_t::CalTotalChannelNum()
+// ------------------------RootGruop--------------
+
+RootGroup_t::RootGroup_t()
 {
-    int tCount = 0;
-    for(int i = 0; i < 4; i++)
+    ClearGroup();
+}
+
+RootGroup_t::~RootGroup_t()
+{
+    ClearGroup();
+}
+
+void RootGroup_t::ClearGroup()
+{
+    fTRFilledFlag = 0;
+    for(int i = 0; i < 8; i++)
     {
-        if(fGroupFlag[i])
+        fChFilledPosition[i] = -1;
+        fPositionRelatedChan[i] = -1;
+    }
+    fRefTR.Clear();
+    fRefArray.Clear();
+}
+
+bool RootGroup_t::AddEvent(RootSingle_t & event, int ch)
+{
+    if(ch == 8)
+    {
+        if(fTRFilledFlag)
+            return false;
+        fRefTR = &event;
+        fTRFilledFlag = 1;
+    }
+    else if(ch < 8 && ch >= 0)
+    {
+        if(fChFilledPosition[ch] != -1)
         {
-            tCount += 4;
+            return false;
+        }
+        fRefArray.Add(&event);
+        fChFilledPosition[ch] = fChannelFilledCounter;
+        fPositionRelatedChan[fChannelFilledCounter] = ch;
+        fChannelFilledCounter++;
+    }
+    return true;
+}
+
+RootSingle_t * RootGroup_t::GetEvent(int ch)
+{
+    if(ch == 8)
+    {
+        return (RootSingle_t*)(fRefTR.GetObject());
+    }
+    else if(ch >=0 && ch < 8)
+    {
+        int tPosition = fChFilledPosition[ch];
+        if(tPosition < 0)   return NULL;
+        return (RootSingle_t*) fRefArray . At(tPosition);
+    }
+    return NULL;
+}
+
+bool RootGroup_t::AllChannelFilled()
+{
+    bool result = fTRFilledFlag;
+    if(!result)
+    {
+        return false;
+    }
+    if(fChannelFilledCounter != 8)
+    {
+        return false;
+    }
+    return true;
+}
+
+bool RootGroup_t::ReadyToUse()
+{
+    return fTRFilledFlag>=fTRFlag;
+}
+
+ostream & RootGroup_t::PrintGroup(ostream& os, bool verbose) const
+{
+    os << "TR Flag is " << fTRFlag << ", TR Filled flag is: " << fTRFilledFlag << endl;
+    os << "There're 8 ch in total, " << fChannelFilledCounter << " has filled" << endl;
+
+    if(verbose)
+    {
+        if(fTRFilledFlag)
+        {
+            os << "Channel TR: " << endl;
+            ((RootSingle_t*)fRefTR.GetObject()) -> Show(os);
+        }
+        for(int i = 0; i < 8; i++)
+        {
+            int tPosition = fChFilledPosition[i];
+            if(tPosition != -1)
+            {
+                os << "Channel: " << i << endl;
+                ((RootSingle_t*)fRefArray.At(tPosition)) -> Show(os);
+            }
         }
     }
-    if(fTR0Flag)
-    {
-        tCount ++;
-    }
-    if(fTR1Flag)
-    {
-        tCount ++;
-    }
-    fChannelNum = tCount;
-    return fChannelNum;
 }
+// ----------------------RootEvent-----------------
 
 RootEvent_t::RootEvent_t()
 {
-    for(int i = 0; i < 32; i++)
-    {
-        fChFilledPosition[i] = -1;  // Mark all position as non filled yet.
-        fPositionRelatedChan[i] = -1;   // Mark all position as non fille yet.
-    }
+    Clear();
 }
 
 RootEvent_t::~RootEvent_t()
 {
+    Clear();
 }
 
-bool RootEvent_t::AddEvent(RootSingle_t& event, int gr, int ch)
-{
-    if(ch == 8)
-    {
-        if(gr < 3)
-        {
-            if(fTR0FilledFlag)
-                return false;
-            fRefTR0 = &event;
-            fTR0FilledFlag = 1;
-        }
-        else
-        {
-            if(fTR1FilledFlag)
-                return false;
-            fRefTR1 = &event;
-            fTR1FilledFlag = 1;
-        }
-        
-    }
-    else if(ch < 8)
-    {
-        int tCh = ConvertGrToCh(gr, ch);
-        if(tCh == -1)   return false;
-        if(fChFilledPosition[tCh] != -1)
-        {
-            return false;
-        }
-        // Add Event to chanenl, and record position 
-        fChannelFillingCounter++;
-        fRefArray.Add(&event);
-        fChFilledPosition[tCh] = fChannelFillingCounter;
-        fPositionRelatedChan[fChannelFillingCounter] = tCh;
-    }
-    return true;
-    
-}
-
-ostream& RootEvent_t::PrintEvent(ostream& os, bool verbose)
+int RootEvent_t::CalGroupNum()
 {
     int counter = 0;
-    for(int i = 0; i < 32; i++)
+    for(int i = 0; i < 4; i++)
     {
-        if(fChFilledPosition[i])
+        if(fGroupFlag[i])
         {
             counter ++;
         }
     }
-    if(fTR0FilledFlag)  counter++;
-    if(fTR1FilledFlag)  counter++;
-
-    os << "There're " << CalTotalChannelNum() << " channel(s) in total, " << counter << " channel(s) already saved." << endl;
-    
-    if(verbose)
-    {
-        for(int i = 0; i < 32; i++)
-        {
-            if(fChFilledPosition[i])
-            {
-                os << "Channel: " << i << endl;
-                ((RootSingle_t*)fRefArray.At(i) )-> Show(os);
-            }
-            
-        }
-        if(fTR0FilledFlag)
-        {
-            os << "TR0: " << endl;
-            ((RootSingle_t *)fRefTR0.GetObject())->Show(os);
-        }
-        if (fTR1FilledFlag)
-        {
-            os << "TR0: " << endl;
-            ((RootSingle_t *)fRefTR1.GetObject())->Show(os);
-        }
-    }
+    fGroupNum = counter;
+    return fGroupNum;
 }
 
-bool RootEvent_t::ReadyToSave()
+bool RootEvent_t::AddGroup(RootGroup_t & group, int gr)
 {
-    bool tResult = (fTR0Flag <= fTR0FilledFlag) && (fTR1Flag <= fTR1FilledFlag);
-    if(!tResult)    return false;
-
-    bool tStrict = (fTR0Flag == fTR0FilledFlag) && (fTR1Flag == fTR1FilledFlag);
-    if(tStrict <= tResult)
+    if(fGrFilledPosition[gr] != -1)
     {
-        cerr << "Warning! Fill more data than expected!" << endl;
-        cerr << "TR0: Config Flag: " << fTR0Flag << " Filled Flag: " << fTR0FilledFlag;
-        cerr << "TR1: Config Flag: " << fTR1Flag << " Filled Flag: " << fTR1FilledFlag;
+        return false;
     }
+    fRefArray.Add(&group);
+    fGrFilledPosition[gr] = fGrFilledCounter;
+    fPositionRelatedGr[fGrFilledCounter] = gr;
+    fGrFilledCounter++;
+    return true;
+}
 
-    for(int gr = 0; gr < 4; gr++)
+ostream& RootEvent_t::PrintEvent(ostream& os, bool verbose)
+{
+    os << "There're " << fGroupNum << " groups in total, " << fGrFilledCounter << " has been filled yet" << endl;
+    for(int i = 0; i < 4; i++)
     {
-        if(fGroupFlag[gr])
+        os << "Group: " << i << endl;
+        int tPosition = fGrFilledPosition[i];
+        if(tPosition != -1)
         {
-            for(int ch = 0; ch < 8; ch++)
-            {
-                int tCh = ConvertGrToCh(gr, ch);
-                if(fChFilledPosition[tCh] < 0)  return false;   // judge each channel position
-            }
+            ((RootGroup_t*)fRefArray.At(tPosition)) -> PrintGroup(os, verbose);
+        }
+    }
+    return os;
+}
+
+bool RootEvent_t::AllGroupFilled()
+{
+    for(int i = 0; i < 4; i++)
+    {
+        if(fGroupFlag[i])
+        {
+            if(fGrFilledPosition[i] == -1)
+                return false;
         }
         else
         {
-            for(int ch = 0; ch < 8; ch++)
+            if(fGrFilledPosition[i] != -1)
             {
-                int tCh = ConvertGrToCh(gr, ch);
-                if(fChFilledPosition[tCh] >=0)
-                {
-                    cerr << "Warning! Fill more data than expected!" << endl;
-                    cerr << "Group: " << gr << " Channel: " << ch << endl;
-                    cerr << "Group Flag: " << fGroupFlag[gr] << endl;
-                    cerr << "Data Position: " << fChFilledPosition[tCh] << endl;
-                }
+                cerr << "Warning: Group " << i << " is not needed, but already filled yet" << endl;
             }
         }
         
     }
+    return true;
 }
+
+
+RootGroup_t * RootEvent_t::GetGroup(int gr)
+{
+    if(gr < 0 || gr >3)
+    {
+        return NULL;
+    }
+    int tPosition = fGrFilledPosition[gr];
+    if(tPosition < 0)   return NULL;
+    return (RootGroup_t *) fRefArray .At(tPosition);
+}
+
+RootSingle_t * RootEvent_t::GetChannel(int gr, int ch)
+{
+    auto group = GetGroup(gr);
+    if(!group)  return NULL;
+    return group -> GetEvent(ch);
+}
+
+bool RootEvent_t::SetGroupFlag(int gr, bool flag)
+{
+    if(IsFilling())
+    {
+        return false;
+    }    
+    fGroupFlag[gr] = flag;
+    return true;
+}
+
+bool RootEvent_t::IsFilling()
+{
+    if(fGrFilledCounter != 0)
+    {
+        return false;
+    }
+    return true;
+}
+
+void RootEvent_t::Clear()
+{
+    for(int i = 0; i < 4; i++)
+    {
+        fGrFilledPosition[i] = -1;
+        fPositionRelatedGr[i] = -1;
+    }
+    fHeaderFilledFlag = 0;
+    fHeader.Clear();
+    fRefArray.Clear();
+}
+
+bool RootEvent_t::SetHeader(const RootHeader_t & header)
+{
+    if(fHeaderFilledFlag)   return false;
+    fHeader = header;
+    return true;
+}
+
 
 int ConvertGrToCh(int gr, int ch)
 {
-    if(ch >= 8 || ch < 0)
+    if (ch >= 8 || ch < 0)
     {
         return -1;
     }
-    if(gr >=4 || gr < 0)
+    if (gr >= 4 || gr < 0)
     {
         return -1;
     }
@@ -198,41 +300,11 @@ int ConvertGrToCh(int gr, int ch)
 
 bool ConvertChToGr(int Channel, int &gr, int &ch)
 {
-    if(Channel < 0 || Channel >= 36)
+    if (Channel < 0 || Channel >= 36)
     {
         return 0;
     }
     gr = Channel / 8;
     ch = Channel % 8;
     return true;
-}
-
-RootSingle_t * RootEvent_t::GetChannel(int gr, int ch)
-{
-    if(ch == 8)
-    {
-        if(gr < 3)
-        {
-            return (RootSingle_t*)(fRefTR0.GetObject());
-        }
-        else if(gr == 3)
-        {
-            return (RootSingle_t*)(fRefTR1.GetObject());
-        }
-    }
-    else
-    {
-        int tCh = ConvertGrToCh(gr, ch);
-        if(tCh < 0) return NULL;
-        int tPosition = fChFilledPosition[tCh];
-        if(tPosition < 0)   return NULL;
-        return (RootSingle_t*)fRefArray.At(tPosition);
-    }
-    return NULL;
-    
-}
-
-bool RootEvent_t::SetGroupFlag(int gr, bool flag)
-{
-    
 }

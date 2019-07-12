@@ -15,6 +15,7 @@
 #ifdef __ROOTCLING__
 #pragma link C++ class RootHeader_t;
 #pragma link C++ class RootSingle_t;
+#pragma link C++ class RootGroup_t;
 #pragma link C++ class RootEvent_t;
 #endif
 
@@ -23,6 +24,8 @@ class RootHeader_t : public TObject
 public:
     RootHeader_t() = default;
     RootHeader_t(const Header_t &);
+    void SetHeader(const Header_t &);
+    void Clear(){fEventCounter = 0; fTTStamp = 0;}
 
     int fEventCounter = 0;
     int fTTStamp = 0;
@@ -34,9 +37,46 @@ class RootSingle_t : public TObject
 public:
     RootSingle_t() = default;
     RootSingle_t(const SingleEvent_t &);
+    
+#ifdef DEBUG
+    float &operator[](int i){return fData[i];}; // used only when debug
+#endif
+
+    void SetData(const SingleEvent_t &);
+    
+    void ClearData();   // Need lots of time, reinitialize float array.
+    ostream& Show(ostream &os) const;
+private:
     float fData[1024]{0};
-    ostream& Show(ostream &os);
 ClassDef(RootSingle_t,1)
+};
+
+class RootGroup_t : public TObject
+{
+public:
+    RootGroup_t();
+    ~RootGroup_t();
+    void ClearGroup();
+    bool AddEvent(RootSingle_t &, int ch);
+    RootSingle_t * GetEvent(int ch);
+
+    ostream & PrintGroup(ostream & os, bool verbose = 1) const;
+
+    bool AllChannelFilled(); // Judge whether all channels are filled
+    bool ReadyToUse();  // if TR is needed to be filled, than judge whether TR is filled
+
+    
+private:
+    bool fTRFlag = 1;
+    bool fTRFilledFlag = 0;
+
+    int fChannelFilledCounter = 0;
+    int fChFilledPosition[8]; // record channel related event array position
+    int fPositionRelatedChan[8]; // record event array position related channel
+    TRef fRefTR;
+    TRefArray fRefArray;
+
+ClassDef(RootGroup_t, 1);
 };
 
 class RootEvent_t  : public TObject
@@ -45,41 +85,35 @@ public:
     RootEvent_t();
     ~RootEvent_t();
 
-    bool AddEvent(RootSingle_t&, int gr, int ch);
     ostream& PrintEvent(ostream &os, bool verbose = 1);
     
-    int GetTotalChannelNum(){return fChannelNum;}
-    
+    RootGroup_t * GetGroup(int gr);
     RootSingle_t * GetChannel(int gr, int ch);
 
     bool SetGroupFlag(int gr, bool flag);
-    bool SetTRFlag(int tr, bool flag);
-    void Clear();
-
-    bool ReadyToSave();
     
+    bool SetHeader(const RootHeader_t&);
+    bool AddGroup(RootGroup_t &, int gr);
+    
+    
+    void Clear();   // Clear Data only, won't clear configuration
+    bool AllGroupFilled();
+    bool IsFilling();
+
 private:
-    bool fHeaderFlag = 1;
 
+    int CalGroupNum();
+    int fGroupNum = 0;
     bool fGroupFlag[4]{0};
-    bool fTR0Flag = 0;
-    bool fTR1Flag = 0;
 
-    int fChannelNum = 0;
-    int CalTotalChannelNum();
+    bool fHeaderFilledFlag = 0;
+    RootHeader_t fHeader;
 
-    int fChannelFillingCounter = 0; //!
-    int fChFilledPosition[32];  // record channel related event array position
-    int fPositionRelatedChan[32];   // record event array position related channel
+    int fGrFilledCounter = 0;
+    int fGrFilledPosition[4];
+    int fPositionRelatedGr[4];
+    TRefArray fRefArray;    // Pointer to Groups
 
-    bool fTR0FilledFlag = 0;    
-    bool fTR1FilledFlag = 0;    
-
-
-    // static TClonesArray *fgSingles; //! Used as save data temporaryly
-    TRefArray fRefArray;
-    TRef fRefTR0;
-    TRef fRefTR1;
 
 
 ClassDef(RootEvent_t, 1);
