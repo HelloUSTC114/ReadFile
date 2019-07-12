@@ -119,16 +119,6 @@ private:
 ClassDef(RootEvent_t, 1);
 };
 
-class ProcessRawData
-{
-public:
-    ProcessRawData();
-    ~ProcessRawData();
-private:
-    TFile *fFile;
-    TTree *fTree;
-    
-};
 
 int ConvertGrToCh(int gr, int ch);
 bool ConvertChToGr(int Channel, int &gr, int &ch);

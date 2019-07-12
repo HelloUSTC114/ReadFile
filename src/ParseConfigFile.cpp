@@ -36,6 +36,7 @@ static void SetDefaultConfiguration(WaveDumpConfig_t *WDcfg)
         WDcfg->FTThreshold[i] = 0;
         WDcfg->FTDCoffset[i] = 0;
     }
+    WDcfg -> OutFileFlags = (OUTFILE_FLAGS)0;
     WDcfg->useCorrections = -1;
     WDcfg->UseManualTables = -1;
     for (i = 0; i < MAX_X742_GROUP_SIZE; i++)
@@ -312,7 +313,13 @@ int ParseConfigFile(FILE* f_ini, WaveDumpConfig_t *WDcfg)
         {
             read = fscanf(f_ini, "%s", str1);
             if (strcmp(str1, "BINARY") == 0)
-                WDcfg->OutFileFlags = (OUTFILE_FLAGS)(WDcfg -> OutFileFlags | OFF_BINARY);
+            {
+                WDcfg->OutFileFlags = (OUTFILE_FLAGS)(WDcfg->OutFileFlags | OFF_BINARY);
+            }
+            else if(strcmp(str1, "ASCII") == 0)
+            {
+                WDcfg->OutFileFlags = (OUTFILE_FLAGS)(WDcfg->OutFileFlags & ~OFF_BINARY);
+            }
             else if (strcmp(str1, "ASCII") != 0)
                 printf("%s: invalid output file format\n", str1);
             continue;
@@ -324,6 +331,10 @@ int ParseConfigFile(FILE* f_ini, WaveDumpConfig_t *WDcfg)
             read = fscanf(f_ini, "%s", str1);
             if (strcmp(str1, "YES") == 0)
                 WDcfg->OutFileFlags = (OUTFILE_FLAGS)(WDcfg->OutFileFlags | OFF_HEADER);
+            else if(strcmp(str1, "NO") == 0)
+            {
+                WDcfg->OutFileFlags = (OUTFILE_FLAGS)(WDcfg->OutFileFlags & ~OFF_HEADER);
+            }
             else if (strcmp(str1, "NO") != 0)
                 printf("%s: invalid option\n", str);
             continue;

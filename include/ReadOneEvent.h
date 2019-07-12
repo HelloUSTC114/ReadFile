@@ -10,17 +10,26 @@
 void FillZeroHeader(Header_t &header);
 
 void FillZeroEvent(SingleEvent_t &event);
+void FillZeroEvent(float *data);
 
 class OutputFileManager
 {
 public:
+    OutputFileManager() = default;
+    ~OutputFileManager();
     OutputFileManager(string sfile);    // sfile is name of data file, group, channel information can be inferred from sfile, header information can be inferred from contents of file
     OutputFileManager(string sfile, int gr, int ch);    // sfile is name of configuration file, group and channel information must be provided, header and format information can be inferred from the information
-    void ConvertFileFlag(const OUTFILE_FLAGS&);
     bool OpenFile(string s);
     int ReadOneEvent(Header_t &, SingleEvent_t &);
+    int ReadOneEvent(Header_t &, float *);
 
-    bool IsValid(){return fStream.good() && fStream.is_open();}
+    bool IsValid(){return fStream.good() && fStream.is_open() && fFileNameParsed && fFileHeaderParsed;}
+
+    void Reset(string sfile);
+    void Reset(string sfile, int gr, int ch);
+    void Clear();
+
+    ostream& PrintFileStatus(ostream &os);
 private:
     string fFileName;
     ifstream fStream;
@@ -42,8 +51,9 @@ private:
 
     bool OpenFile();    // In charge of openfile
     
-    bool fFileAttributes = 0;
+    bool fFileAttributes = 0;   // if Attributes is assigned by given original configuration file, than channel and gruop info must be given meanwhile, and fFileNameParsed/fHeaderParsed should be set true;
     bool GenerateFileNameFromGroup(int gr, int ch);
+    void ConvertFileFlag(const OUTFILE_FLAGS&);
 };
 
 

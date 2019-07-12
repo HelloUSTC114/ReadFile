@@ -37,14 +37,60 @@ OutputFileManager::OutputFileManager(string sfile)
     OpenFile();
 }
 
-OutputFileManager::OutputFileManager(string sfile, int gr, int ch)
+OutputFileManager::OutputFileManager(string sfile, int gr, int ch):
+fGroup(gr), fChannel(ch)
 {
     auto pFile = fopen(sfile.c_str(), "read");
+    if(!pFile)
+    {
+        cerr << "Error! Cannot open configuration file! File name: " << sfile << endl;
+        return;
+    }
     WaveDumpConfig_t config;
     ParseConfigFile(pFile,&config);
     ConvertFileFlag(config.OutFileFlags);
     GenerateFileNameFromGroup(gr, ch);
     OpenFile();
+}
+
+void OutputFileManager::Clear()
+{
+    fFileName.clear();
+    fStream . close();
+    fStream.clear();
+    fEventCounter = 0;
+    fFileAttributes = 0;
+    fFileNameParsed = 0;
+    fFileHeaderParsed = 0;
+}
+
+void OutputFileManager::Reset(string sfile)
+{
+    Clear();
+    ParseDataFileName(sfile);
+    ParseDataFileHeader(sfile);
+    OpenFile();
+}
+
+void OutputFileManager::Reset(string sfile, int gr, int ch)
+{
+    Clear();
+    auto pFile = fopen(sfile.c_str(), "read");
+    if (!pFile)
+    {
+        cerr << "Error! Cannot open configuration file! File name: " << sfile << endl;
+        return;
+    }
+    WaveDumpConfig_t config;
+    ParseConfigFile(pFile, &config);
+    ConvertFileFlag(config.OutFileFlags);
+    GenerateFileNameFromGroup(gr, ch);
+    OpenFile();
+}
+
+OutputFileManager::~OutputFileManager()
+{
+    Clear();
 }
 
 void OutputFileManager::FillHeaderManually(Header_t& header)
@@ -67,36 +113,40 @@ void OutputFileManager::FillHeaderManually(Header_t& header)
 
 int OutputFileManager::ReadOneEvent(Header_t & header, SingleEvent_t &event)
 {
+    ReadOneEvent(header, event.Data);
+}
+
+int OutputFileManager::ReadOneEvent(Header_t & header, float* data)
+{
     if (!fStream.good() || !fStream.is_open())
     {
         FillZeroHeader(header);
-        FillZeroEvent(event);
+        FillZeroEvent(data);
         return -1;
     }
 
-    fEventCounter ++;
-    if(fBinaryFlag) // binary file
+    fEventCounter++;
+    if (fBinaryFlag) // binary file
     {
-        if(fHeaderFlag) // Has header, read header from file
+        if (fHeaderFlag) // Has header, read header from file
         {
-            fStream.read((char *)&header.fLength, sizeof(uint32_t));  // Read fLength
-            fStream.read((char *)&header.fBoardID, sizeof(uint32_t)); // Read fBoardID
-            fStream.read((char *)&header.fPattern, sizeof(uint32_t)); // Read fPattern
-            fStream.read((char *)&header.fChannel, sizeof(uint32_t)); // Read fChannel
-            fStream.read((char *)&header.fEventCounter, sizeof(uint32_t)); // Read fEventCounter
+            fStream.read((char *)&header.fLength, sizeof(uint32_t));         // Read fLength
+            fStream.read((char *)&header.fBoardID, sizeof(uint32_t));        // Read fBoardID
+            fStream.read((char *)&header.fPattern, sizeof(uint32_t));        // Read fPattern
+            fStream.read((char *)&header.fChannel, sizeof(uint32_t));        // Read fChannel
+            fStream.read((char *)&header.fEventCounter, sizeof(uint32_t));   // Read fEventCounter
             fStream.read((char *)&header.fTriggerTimeTag, sizeof(uint32_t)); // Read fTriggerTimeTag
         }
-        else    // No header, fill header manually
+        else // No header, fill header manually
         {
             FillHeaderManually(header);
         }
         // Fill event into event array;
-        fStream.read((char*) event.Data, 1024 * 4);
-        
+        fStream.read((char *)data, 1024 * 4);
     }
-    else    // ASCII file
+    else // ASCII file
     {
-        if(fHeaderFlag) // Has header
+        if (fHeaderFlag) // Has header
         {
             string sLine;
             for (int i = 0; i < 7; i++)
@@ -182,15 +232,83 @@ int OutputFileManager::ReadOneEvent(Header_t & header, SingleEvent_t &event)
         {
             FillHeaderManually(header);
         }
-        
-        for(int i = 0; i < 1024; i++)
+
+        for (int i = 0; i < 1024; i++)
         {
             float temp;
             fStream >> temp;
-            event.Data[i] = temp;
+            data[i] = temp;
         }
     }
     return 1;
+}
+
+ostream& OutputFileManager::PrintFileStatus(ostream &os)
+{
+    if(fStream.is_open())
+    {
+        os << "File is open, file name: " << fFileName << endl;
+        if(fStream.good())
+        {
+            os << "File is good." << endl;
+        }
+    }
+    else
+    {
+        os << "File name: " << fFileName << endl;
+        os << "File has not open yet." << endl;
+    }
+    if(fFileAttributes)
+    {
+        os << "Reading attributes and file names has been parsed through original configuration file." << endl;
+    }
+    else if(fFileNameParsed)
+    {
+        os << "Binary/ASCII and Channel info is parsed through data file name." << endl;
+    }
+    else if(fFileHeaderParsed)
+    {
+        os << "Header info is parsed through attemped to read data." << endl;
+    }
+    if(fFileNameParsed)
+    {
+        os << "Group: " << fGroup << endl;
+        os << "Channel: ";
+        if(fTRFlag)
+        {
+            os << "TR" << endl;
+        }
+        else
+        {
+            os << fChannel << endl;
+        }
+        os << "Binary/ASCII: ";
+        if(fBinaryFlag)
+        {
+            os << "Binary" << endl;
+        }
+        else
+        {
+            os << "ASCII" << endl;
+        }
+    }
+    if(fFileHeaderParsed)
+    {
+        os << "Header: " << fHeaderFlag << endl;
+    }
+    if(IsValid())
+    {
+        os << "Everything is good, ready to read a new event." << endl;
+    }
+    else
+    {
+        os << "Something wrong, please check file name." << endl;
+    }
+    
+
+    return os;
+
+
     
 }
 
@@ -215,11 +333,24 @@ bool OutputFileManager::ParseDataFileName(string sfile)
     if (fFileName.find("TR") != string::npos)
     {
         fTRFlag = 1;
-        string sub_temp = fFileName.substr(3, 1); // Judge channel
-        stringstream ss_temp(sub_temp);
-        int ch = 0;
-        ss_temp >> ch;
-        fChannel = ch;
+        string sub_temp = fFileName.substr(3, 3); // Judge channel
+        if(sub_temp == "0_0")
+        {
+            fGroup = 0;
+        }
+        else if(sub_temp == "0_1")
+        {
+            fGroup = 1;
+        }
+        else if(sub_temp == "0_2")
+        {
+            fGroup = 2;
+        }
+        else if(sub_temp == "1_3")
+        {
+            fGroup = 3;
+        }
+        fChannel = 8;
     }
     else if (fFileName.find("wave") != string::npos)
     {
@@ -228,7 +359,8 @@ bool OutputFileManager::ParseDataFileName(string sfile)
         stringstream ss_temp(sub_temp);
         int ch = 0;
         ss_temp >> ch;
-        fChannel = ch;
+        fGroup = ch / 8;
+        fChannel = ch % 8;
     }
     else
     {
@@ -290,6 +422,7 @@ bool OutputFileManager::ParseDataFileHeader(string sfile)
         }
 
         tStream.close();
+        fFileHeaderParsed = 1;
     }
     return true;
 }
@@ -327,17 +460,19 @@ bool OutputFileManager::GenerateFileNameFromGroup(int gr, int ch)
         cerr << "File attributions have not been decided yet!" << endl;
         return false;
     }
+    fGroup = gr;
+    fChannel = ch;
     if(ch == 8) // For TR
     {
         fFileName = "TR_";
         if(gr == 0 || gr == 1 || gr == 2)
         {
-            fFileName += "_0_";
+            fFileName += "0_";
             fFileName += to_string(gr);
         }
         else
         {
-            fFileName += "_1_3";
+            fFileName += "1_3";
         }
     }
     else
@@ -354,6 +489,9 @@ bool OutputFileManager::GenerateFileNameFromGroup(int gr, int ch)
     {
         fFileName += ".txt";
     }
+
+    fFileNameParsed = 1;
+    fFileHeaderParsed = 1;
     return true;
 }
 
@@ -372,5 +510,13 @@ void FillZeroEvent(SingleEvent_t &event)
     for (int i = 0; i < 1024; i++)
     {
         event.Data[i] = 0;
+    }
+}
+
+void FillZeroEvent(float *data)
+{
+    for(int i = 0;i < 1024; i++)
+    {
+        data[i] = 0;
     }
 }
