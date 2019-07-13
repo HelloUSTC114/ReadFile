@@ -108,5 +108,12 @@ int main(int argc, char ** argv)
         fileManager.Reset(filename, gr, ch);
     }
     fileManager.PrintFileStatus(cout);
+    RootSingle_t tSingle;
+    Header_t tHeader;
+    if(fileManager.IsValid())
+    {
+        fileManager.ReadOneEvent(tHeader, &tSingle[0]);
+        tSingle.Show(cout);
+    }
     return 0;
 }
