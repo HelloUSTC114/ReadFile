@@ -32,8 +32,11 @@ public:
 ClassDef(RootHeader_t, 1)
 };
 
+
 class RootSingle_t : public TObject
 {
+    friend int ReadOneEvent(OutputFileManager &, Header_t &, RootSingle_t &);
+
 public:
     RootSingle_t() = default;
     RootSingle_t(const SingleEvent_t &);
@@ -50,6 +53,7 @@ private:
     float fData[1024]{0};
 ClassDef(RootSingle_t,1)
 };
+
 
 class RootGroup_t : public TObject
 {
@@ -119,6 +123,7 @@ private:
 ClassDef(RootEvent_t, 1);
 };
 
+int ReadOneEvent(OutputFileManager &, Header_t &, RootSingle_t &);
 
 int ConvertGrToCh(int gr, int ch);
 bool ConvertChToGr(int Channel, int &gr, int &ch);

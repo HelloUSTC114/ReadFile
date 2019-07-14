@@ -3,6 +3,8 @@
 #include "ReadOneEvent.h"
 #include "TFile.h"
 #include "TTree.h"
+
+#include "ProcessManager.h"
 // Test FillRoot.h
 // int main()
 // {
@@ -88,32 +90,39 @@
 // }
 
 // Test ReadOneEvent
-int main(int argc, char ** argv)
+// int main(int argc, char ** argv)
+// {
+//     // string filename = "WaveDumpConfig_X742.txt";
+//     // OutputFileManager fileManager(filename, 2, 8);
+//     OutputFileManager fileManager;
+//     if(argc == 2)
+//     {
+//         string filename(argv[1]);
+//         fileManager.Reset(filename);
+//     }
+//     else if(argc == 4)
+//     {
+//         string filename(argv[1]);
+//         string sGr(argv[2]);
+//         string sCh(argv[3]);
+//         int gr = stoi(sGr);
+//         int ch = stoi(sCh);
+//         fileManager.Reset(filename, gr, ch);
+//     }
+//     fileManager.PrintFileStatus(cout);
+//     RootSingle_t tSingle;
+//     Header_t tHeader;
+//     if(fileManager.IsValid())
+//     {
+//         fileManager.ReadOneEvent(tHeader, &tSingle[0]);
+//         tSingle.Show(cout);
+//     }
+//     return 0;
+// }
+
+// Test ProcessManager
+
+int main()
 {
-    // string filename = "WaveDumpConfig_X742.txt";
-    // OutputFileManager fileManager(filename, 2, 8);
-    OutputFileManager fileManager;
-    if(argc == 2)
-    {
-        string filename(argv[1]);
-        fileManager.Reset(filename);
-    }
-    else if(argc == 4)
-    {
-        string filename(argv[1]);
-        string sGr(argv[2]);
-        string sCh(argv[3]);
-        int gr = stoi(sGr);
-        int ch = stoi(sCh);
-        fileManager.Reset(filename, gr, ch);
-    }
-    fileManager.PrintFileStatus(cout);
-    RootSingle_t tSingle;
-    Header_t tHeader;
-    if(fileManager.IsValid())
-    {
-        fileManager.ReadOneEvent(tHeader, &tSingle[0]);
-        tSingle.Show(cout);
-    }
-    return 0;
+    ProcessManager a("TestProcess.root", 0);
 }

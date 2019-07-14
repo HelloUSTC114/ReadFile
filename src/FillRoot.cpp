@@ -308,3 +308,9 @@ bool ConvertChToGr(int Channel, int &gr, int &ch)
     ch = Channel % 8;
     return true;
 }
+
+
+int ReadOneEvent(OutputFileManager & manager, Header_t & header, RootSingle_t &single)
+{
+    manager . ReadOneEvent(header, single.fData);
+}

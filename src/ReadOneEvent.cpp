@@ -53,6 +53,14 @@ fGroup(gr), fChannel(ch)
     OpenFile();
 }
 
+OutputFileManager::OutputFileManager(const OUTFILE_FLAGS & outfileflags, int gr, int ch):
+fGroup(gr), fChannel(ch)
+{
+    ConvertFileFlag(outfileflags);
+    GenerateFileNameFromGroup(gr, ch);
+    OpenFile();
+}
+
 void OutputFileManager::Clear()
 {
     fFileName.clear();
@@ -368,6 +376,60 @@ bool OutputFileManager::ParseDataFileName(string sfile)
         return false;
     }
     fFileNameParsed = 1;
+    return true;
+}
+
+bool OutputFileManager::ParseDataFileName(string sfile, int &gr, int &ch, bool &binflag)
+{
+    if (sfile.find(".txt") != string::npos)
+    {
+        binflag = 0;
+    }
+    else if (sfile.find(".dat") != string::npos)
+    {
+        binflag = 1;
+    }
+    else
+    {
+        cerr << "Error! Cannot parse file format! File: " << sfile << endl;
+        return false;
+    }
+
+    if (sfile.find("TR") != string::npos)
+    {
+        string sub_temp = sfile.substr(3, 3); // Judge channel
+        if (sub_temp == "0_0")
+        {
+            gr = 0;
+        }
+        else if (sub_temp == "0_1")
+        {
+            gr = 1;
+        }
+        else if (sub_temp == "0_2")
+        {
+            gr = 2;
+        }
+        else if (sub_temp == "1_3")
+        {
+            gr = 3;
+        }
+        ch = 8;
+    }
+    else if (sfile.find("wave") != string::npos)
+    {
+        string sub_temp = sfile.substr(5, 2); // Judge channel
+        stringstream ss_temp(sub_temp);
+        int tch = 0;
+        ss_temp >> tch;
+        gr = tch / 8;
+        ch = tch % 8;
+    }
+    else
+    {
+        cerr << "Error! Cannot parse channel! File: " << sfile << endl;
+        return false;
+    }
     return true;
 }
 

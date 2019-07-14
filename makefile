@@ -3,6 +3,8 @@
 # Then, all .o file must be generated in order to reduce compile time
 # .so library is final aim if no specific excutable file is needed.
 
+PWD = `pwd`
+
 DIR_INC = ./include
 DIR_SRC = ./src
 DIR_OBJ = ./obj
@@ -30,34 +32,37 @@ DICTCXX = ${DIR_LINK}/$(LIB)Dict.cxx
 Excutable = test
 
 
+#------------------------------------------------------------------
+
 $(LIBFULL): $(OBJ) $(DICTCXX)
-	`root-config --cxx`	-fPIC	-shared	-o	$@	$(OBJ)	$(DICTCXX)	`root-config --libs`  $(CXXFLAGS)
+	@`root-config --cxx`	-fPIC	-shared	-o	$@	$(OBJ)	$(DICTCXX)	`root-config --libs`  $(CXXFLAGS)
 
 ${DIR_OBJ}/%.o: ${DIR_SRC}/%.cpp ${DIR_INC}/%.h
-	`root-config --cxx `	-o	$@	-c	$<	-fPIC $(CXXFLAGS)
+	@`root-config --cxx `	-o	$@	-c	$<	-fPIC $(CXXFLAGS)
 
 $(DICTCXX): $(HEADER)   $(LINKDEF)
-	rootcling	-f	$@	-c	$(HEADER)	$(LINKDEF)
+	@rootcling	-f	$@	-c	$(HEADER)	$(LINKDEF)
+	@cp $(DIR_LINK)/*pcm $(PWD)
 
 
 
 clean:
-	-rm $(OBJ) $(DIR_LINK)/*.cxx
+	@-rm $(OBJ) $(DIR_LINK)/*.cxx
 distclean:
-	-rm *.so *.pcm *.o *.root *.pdf $(Excutable) *Dict* filelist
+	@-rm $(DIR_LIB)/*.so $(DIR_LINK)/*.pcm $(DIR_OBJ)/*.o **/*.root **/*.pdf $(Excutable) *Dict* filelist
 
 
 test:  test.cpp $(LIBFULL)
-	`root-config --cxx `	-o	$@	$<	-Llib	-l$(LIB)	`root-config --libs` $(CXXFLAGS)
+	@`root-config --cxx `	-o	$@	$<	-Llib	-l$(LIB)	`root-config --libs` $(CXXFLAGS)
 
 
 
 all: $(Excutable)
 
 install: $(LIBFULL)
-	-mkdir ../Excutable
-	-cp $(Excutable) ../Excutable
-	-cp $(LIBFULL) ../Excutable
-	-cp *.pcm ../Excutable
-	-cp rootlogon.C ../Excutable
-	-cp ConfigFile ../Excutable
+	@-mkdir ../Excutable
+	@-cp $(Excutable) ../Excutable
+	@-cp $(LIBFULL) ../Excutable
+	@-cp *.pcm ../Excutable
+	@-cp rootlogon.C ../Excutable
+	@-cp ConfigFile ../Excutable

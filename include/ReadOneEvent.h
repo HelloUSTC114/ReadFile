@@ -19,6 +19,8 @@ public:
     ~OutputFileManager();
     OutputFileManager(string sfile);    // sfile is name of data file, group, channel information can be inferred from sfile, header information can be inferred from contents of file
     OutputFileManager(string sfile, int gr, int ch);    // sfile is name of configuration file, group and channel information must be provided, header and format information can be inferred from the information
+    OutputFileManager(const OUTFILE_FLAGS &, int gr, int ch);
+    
     bool OpenFile(string s);
     int ReadOneEvent(Header_t &, SingleEvent_t &);
     int ReadOneEvent(Header_t &, float *);
@@ -30,6 +32,9 @@ public:
     void Clear();
 
     ostream& PrintFileStatus(ostream &os);
+
+    static bool ParseDataFileName(string sfile, int &gr, int &ch, bool & binflag); // Only in charge of parse file name
+
 private:
     string fFileName;
     ifstream fStream;
