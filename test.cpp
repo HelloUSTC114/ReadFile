@@ -8,31 +8,29 @@
 // Test FillRoot.h
 // int main()
 // {
-//     RootEvent_t tEvent;
-//     RootGroup_t tGroup;
-//     RootSingle_t tSingle;
+//     // RootEvent_t tEvent;
+//     // RootGroup_t tGroup;
+//     // RootSingle_t tSingle;
 
-//     for(int i = 0; i < 1024; i++)
-//     {
-//         tSingle[i] = i;
-//     }
+//     // for (int i = 0; i < 1024; i++)
+//     // {
+//     //     tSingle[i] = i;
+//     // }
 
-//     for(int i = 0; i < 9; i++)
-//     {
-//         // cout << i << endl;
-//         tGroup.AddEvent(tSingle, i);
-//     }
+//     // for (int i = 0; i < 9; i++)
+//     // {
+//     //     // cout << i << endl;
+//     //     tGroup.AddEvent(tSingle, i);
+//     // }
 
-//     for(int i = 0; i < 4; i++)
-//     {
-//         tEvent.SetGroupFlag(i, 1);
-//     }
-//     for (int i = 0; i < 4; i++)
-//     {
-//         tEvent.AddGroup(tGroup, i);
-//     }
-
-
+//     // for (int i = 0; i < 4; i++)
+//     // {
+//     //     tEvent.SetGroupFlag(i, 1);
+//     // }
+//     // for (int i = 0; i < 4; i++)
+//     // {
+//     //     tEvent.AddGroup(tGroup, i);
+//     // }
 
 //     // // Verify TObject Write functions well
 //     // auto file = new TFile("tEvent.root", "recreate");
@@ -54,13 +52,37 @@
 //     // delete file2;
 //     // file2 = NULL;
 
-//     // Verify Tree 
+//     // Verify Tree
+
+//     auto tEvent = new RootEvent_t;
+//     RootGroup_t *tGroup = new RootGroup_t;
+//     RootSingle_t tSingle;
+
+//     for (int i = 0; i < 1024; i++)
+//     {
+//         tSingle[i] = i;
+//     }
+
+//     for (int i = 0; i < 9; i++)
+//     {
+//         // cout << i << endl;
+//         tGroup -> AddEvent(tSingle, i);
+//     }
+
+//     for (int i = 0; i < 4; i++)
+//     {
+//         tEvent->SetGroupFlag(i, 1);
+//     }
+//     for (int i = 0; i < 4; i++)
+//     {
+//         tEvent->AddGroup(*tGroup, i);
+//     }
 
 //     auto treeFile = new TFile("tEventTree.root", "recreate");
 //     auto eventTree = new TTree("Event", "Test Tree");
 //     auto branch = eventTree -> Branch("EventBranch", &tEvent);
 
-//     tEvent.PrintEvent(cout);
+//     tEvent -> PrintEvent(cout);
 //     for(int i = 0; i < 32; i++)
 //     {
 //         eventTree -> Fill();
@@ -70,6 +92,13 @@
 
 //     delete treeFile;
 //     treeFile = NULL;
+//     delete tEvent;
+//     tEvent = NULL;
+// }
+
+
+// int main(){
+
 
 //     auto treeFile2 = new TFile("tEventTree.root");
 //     auto eventTree2 = (TTree*)treeFile2 -> Get("Event");
@@ -120,9 +149,21 @@
 //     return 0;
 // }
 
-// Test ProcessManager
+// // Test ProcessManager
 
 int main()
 {
+    // ofstream fout("test.txt");
     ProcessManager a("TestProcess.root", 0);
+    a.FillOneEvent();
+    
+    a.FillOneEvent();
+    a.WriteTree();
+    a.Clear();
+    a.SetFile("TestProcess.root");
+    a.GetOneEvent(0);
+    // a.GetGlobalEvent()->PrintEvent(fout, 1);
+    // fout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    a.GetOneEvent(1);
+    // a.GetGlobalEvent() -> PrintEvent(fout,1);
 }

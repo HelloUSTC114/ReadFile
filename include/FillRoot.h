@@ -12,12 +12,16 @@
 #include "DataType.h"
 #include "ReadOneEvent.h"
 
+#include "ProcessManager.h"
+
 #ifdef __ROOTCLING__
 #pragma link C++ class RootHeader_t;
 #pragma link C++ class RootSingle_t;
 #pragma link C++ class RootGroup_t;
 #pragma link C++ class RootEvent_t;
 #endif
+
+class ProcessManager;
 
 class RootHeader_t : public TObject
 {
@@ -36,19 +40,19 @@ ClassDef(RootHeader_t, 1)
 class RootSingle_t : public TObject
 {
     friend int ReadOneEvent(OutputFileManager &, Header_t &, RootSingle_t &);
-
+    friend class ProcessManager;
 public:
+    float &operator[](int i){return fData[i];}; // used only when debug
     RootSingle_t() = default;
     RootSingle_t(const SingleEvent_t &);
     
-#ifdef DEBUG
-    float &operator[](int i){return fData[i];}; // used only when debug
-#endif
-
     void SetData(const SingleEvent_t &);
     
     void ClearData();   // Need lots of time, reinitialize float array.
     ostream& Show(ostream &os) const;
+
+    static int &GetGlobalSinglerWriteCounter();
+    
 private:
     float fData[1024]{0};
 ClassDef(RootSingle_t,1)
@@ -57,6 +61,8 @@ ClassDef(RootSingle_t,1)
 
 class RootGroup_t : public TObject
 {
+    friend class ProcessManager;
+
 public:
     RootGroup_t();
     ~RootGroup_t();
@@ -69,22 +75,29 @@ public:
     bool AllChannelFilled(); // Judge whether all channels are filled
     bool ReadyToUse();  // if TR is needed to be filled, than judge whether TR is filled
 
+    static int & GetGlobalGroupWriteCounter();
+
     
 private:
     bool fTRFlag = 1;
     bool fTRFilledFlag = 0;
 
+    int fChannelNum = 0;
     int fChannelFilledCounter = 0;
     int fChFilledPosition[8]; // record channel related event array position
     int fPositionRelatedChan[8]; // record event array position related channel
     TRef fRefTR;
     TRefArray fRefArray;
 
+    int fSingleWriteStartIndex = 0;
+
 ClassDef(RootGroup_t, 1);
 };
 
 class RootEvent_t  : public TObject
 {
+    friend class ProcessManager;
+
 public:
     RootEvent_t();
     ~RootEvent_t();
@@ -104,6 +117,7 @@ public:
     bool AllGroupFilled();
     bool IsFilling();
 
+
 private:
 
     int CalGroupNum();
@@ -117,6 +131,8 @@ private:
     int fGrFilledPosition[4];
     int fPositionRelatedGr[4];
     TRefArray fRefArray;    // Pointer to Groups
+
+    int fGroupWriteStartIndex = 0;
 
 
 

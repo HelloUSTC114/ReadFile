@@ -62,6 +62,11 @@ RootGroup_t::~RootGroup_t()
 void RootGroup_t::ClearGroup()
 {
     fTRFilledFlag = 0;
+
+    fChannelFilledCounter = 0;
+    fChannelNum = 0;
+    fSingleWriteStartIndex = 0;
+
     for(int i = 0; i < 8; i++)
     {
         fChFilledPosition[i] = -1;
@@ -90,6 +95,7 @@ bool RootGroup_t::AddEvent(RootSingle_t & event, int ch)
         fChFilledPosition[ch] = fChannelFilledCounter;
         fPositionRelatedChan[fChannelFilledCounter] = ch;
         fChannelFilledCounter++;
+        fChannelNum ++;
     }
     return true;
 }
@@ -183,6 +189,7 @@ bool RootEvent_t::AddGroup(RootGroup_t & group, int gr)
     {
         return false;
     }
+    fGroupNum++;
     fRefArray.Add(&group);
     fGrFilledPosition[gr] = fGrFilledCounter;
     fPositionRelatedGr[fGrFilledCounter] = gr;
@@ -195,10 +202,11 @@ ostream& RootEvent_t::PrintEvent(ostream& os, bool verbose)
     os << "There're " << fGroupNum << " groups in total, " << fGrFilledCounter << " has been filled yet" << endl;
     for(int i = 0; i < 4; i++)
     {
-        os << "Group: " << i << endl;
         int tPosition = fGrFilledPosition[i];
         if(tPosition != -1)
         {
+            os << "Group: " << i << endl;
+            // os << "Pointer: " << fRefArray.At(tPosition) << endl;
             ((RootGroup_t*)fRefArray.At(tPosition)) -> PrintGroup(os, verbose);
         }
     }
@@ -270,7 +278,13 @@ void RootEvent_t::Clear()
     {
         fGrFilledPosition[i] = -1;
         fPositionRelatedGr[i] = -1;
+        fGroupFlag[i] = 0;
     }
+    fGrFilledCounter = 0;
+    fGroupNum = 0;
+
+    fGroupWriteStartIndex = 0;
+
     fHeaderFilledFlag = 0;
     fHeader.Clear();
     fRefArray.Clear();
@@ -312,5 +326,20 @@ bool ConvertChToGr(int Channel, int &gr, int &ch)
 
 int ReadOneEvent(OutputFileManager & manager, Header_t & header, RootSingle_t &single)
 {
-    manager . ReadOneEvent(header, single.fData);
+    int ret = manager . ReadOneEvent(header, single.fData);
+    return ret;
+}
+
+// ---------------For Write and Read Control-------------
+
+int & RootSingle_t::GetGlobalSinglerWriteCounter()
+{
+    static int singleConuter = 0;
+    return singleConuter;
+}
+
+int & RootGroup_t::GetGlobalGroupWriteCounter()
+{
+    static int groupCounter = 0;
+    return groupCounter;
 }
