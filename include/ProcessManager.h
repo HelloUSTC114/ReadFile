@@ -34,6 +34,7 @@ public:
     bool IsFunctioning() const {return fReadFlag||fWriteFlag;}
 
     bool FillOneEvent(); // Only useful when writing events into root file(fill Tree)
+    bool FillAllEvent();    // Only useful when writing raw data
     bool GetOneEvent(int entry);    // Only useful when reading events from root file
     RootEvent_t* ReturnOneEvent(int entry);
 

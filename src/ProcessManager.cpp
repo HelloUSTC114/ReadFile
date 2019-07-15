@@ -180,6 +180,21 @@ bool ProcessManager::FillOneEvent()
     return true;
 }
 
+bool ProcessManager::FillAllEvent()
+{
+    int i = 0;
+    for(;;)
+    {
+        if(!FillOneEvent())
+        {
+            break;
+        }
+        i++;
+    }
+    if(i == 0)  return false;
+    return true;
+}
+
 bool ProcessManager::GetOneEvent(int entry)
 {
     if(!fReadFlag)
